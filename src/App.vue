@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <nav class="navbar navbar-expand navbar-light bg-light">
+    <nav class="navbar navbar-expand navbar-light bg-light py-0">
       <div class="navbar-brand mb-0 h1">
         <img class="logo" src="@/assets/logo.png" alt="" />
       </div>
@@ -31,6 +31,6 @@ export default {
   font-family: 'Noto Sans TC', sans-serif;
 }
 .logo {
-  width: 75px;
+  width: 125px;
 }
 </style>
