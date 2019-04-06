@@ -9,7 +9,7 @@
         </div>
     </nav>
     <div class="container">
-      <rssList />
+      <rssList :key="keys" @reload="currentTime" />
     </div>
   </div>
 </template>
@@ -20,6 +20,17 @@ import rssList from '@/components/RssList.vue';
 export default {
   components: {
     rssList,
+  },
+  data() {
+    return {
+      keys: 0,
+    };
+  },
+  methods: {
+    currentTime() {
+      this.keys = Date.now();
+      console.clear();
+    },
   },
 };
 </script>

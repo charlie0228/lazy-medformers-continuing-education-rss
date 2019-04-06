@@ -24,11 +24,20 @@
             v-model="commonFilter">
           <label class="form-check-label" for="med">醫藥</label>
         </div>
+        <span :class="{'text-danger': currentLoadRss.length !== rssListNum.length,
+            'text-success': currentLoadRss.length === rssListNum.length}">
+          載入進度：<strong>{{ currentLoadRss.length }} / {{ rssListNum.length }}</strong>
+        </span>
+        <a href="#" @click.prevent="reload" class="ml-2" title="重新整理"
+          v-if="currentLoadRss.length !== rssListNum.length">
+          <i class="fas fa-redo"></i>
+        </a>
       </div>
     </div>
     <table class="table">
       <thead>
         <tr>
+          <th scope="col">#</th>
           <th scope="col" width="250">單位</th>
           <th scope="col">標題</th>
           <th scope="col" width="170">
@@ -40,9 +49,10 @@
         </tr>
       </thead>
       <tbody v-if="fliterList">
-        <tr v-for="item in fliterList" :key="item.link"
+        <tr v-for="(item, index) in fliterList" :key="item.link"
           :class="{'table-warning': item.dateError}">
-          <th scope="row" class="align-middle">{{ item.organization }}</th>
+          <th scope="row" class="align-middle">{{ index + 1 }}</th>
+          <td class="align-middle">{{ item.organization }}</td>
           <td class="align-middle">
             <a :href="item.link" class="text-decoration-none" target="_blank">{{ item.title }}</a>
           </td>
@@ -68,6 +78,7 @@ export default {
     return {
       rssList: [],
       fliterRssList: [],
+      rssListNum: [],
       ascending: true,
       isLoading: false,
       yearDisplay: {},
@@ -88,7 +99,7 @@ export default {
   },
   methods: {
     setRss() {
-      const api = process.env.VUE_APP_CORS_PROXY + process.env.VUE_APP_RSS_LIST;
+      const api = process.env.VUE_APP_RSS_LIST;
       const vm = this;
       vm.isLoading = true;
 
@@ -103,25 +114,31 @@ export default {
               refresh: 10 * 60 * 1000,
             });
             this.yearDisplay[item.gsx$title.$t] = item.gsx$yeardisplay.$t;
+            this.rssListNum.push(item.gsx$title.$t);
           }
         });
-
-        // Get RSS feed items
-        feeder.on('new-item', (item) => {
-          vm.newRssItem = {
-            organization: item.description.split(',')[0],
-            title: item.title,
-            link: item.link,
-            originDate: item.description.split(',')[1].trim(),
-            date: this.dateNormalize(item.description.split(',')[1], this.yearDisplay[item.description.split(',')[0]]),
-            dateError: false,
-          };
-          if (vm.newRssItem.date === 'Invalid date') {
-            vm.newRssItem.dateError = true;
-          }
-          vm.rssList.push(vm.newRssItem);
-          vm.isLoading = false;
-        });
+        this.rssListNum = [...new Set(this.rssListNum)];
+        this.getRss();
+      });
+    },
+    getRss() {
+      const vm = this;
+      vm.isLoading = true;
+      // Get RSS feed items
+      feeder.on('new-item', (item) => {
+        vm.newRssItem = {
+          organization: item.description.split(',')[0],
+          title: item.title,
+          link: item.link,
+          originDate: item.description.split(',')[1].trim(),
+          date: this.dateNormalize(item.description.split(',')[1], this.yearDisplay[item.description.split(',')[0]]),
+          dateError: false,
+        };
+        if (vm.newRssItem.date === 'Invalid date') {
+          vm.newRssItem.dateError = true;
+        }
+        vm.rssList.push(vm.newRssItem);
+        vm.isLoading = false;
       });
     },
     dateNormalize(date, type) {
@@ -134,14 +151,14 @@ export default {
         });
         return moment(newdate.join('-')).format('YYYY-MM-DD');
       } if (type === 'ROC') {
-        const newdate = date.split('.');
+        const newdate = date.split(/[/.-]/g);
         newdate[0] = Number(newdate[0]) + 1911;
         return moment(newdate.join('-')).format('YYYY-MM-DD');
       }
       return date;
     },
     filter() {
-      let newList = this.rssList.map(item => Object.assign({}, item));
+      let newList = this.rssList;
       const vm = this;
 
       if (this.commonFilter.length) {
@@ -183,12 +200,18 @@ export default {
       }
       this.fliterRssList = invalidDate.concat(sortDate);
     },
+    reload() {
+      this.$emit('reload');
+    },
   },
   computed: {
     fliterList() {
       this.filter();
       this.sort();
       return this.fliterRssList;
+    },
+    currentLoadRss() {
+      return [...new Set(this.rssList.map(item => item.organization))];
     },
   },
   created() {
