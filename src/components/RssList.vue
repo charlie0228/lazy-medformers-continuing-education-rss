@@ -3,14 +3,14 @@
     <loading :active.sync="isLoading"></loading>
     <div class="form-row mb-3">
       <div class="col form-inline">
-        <input type="text" class="form-control" placeholder="請輸入要搜尋的文字"
-          v-model="search.text">
         <label for="filterArea" class="mx-3">搜尋欄位</label>
         <select class="form-control" id="filterArea" v-model="search.area">
           <option value="all">全部</option>
           <option value="title">標題</option>
           <option value="date">日期</option>
         </select>
+        <input type="text" class="form-control ml-3" placeholder="請輸入要搜尋的文字"
+          v-model="search.text">
       </div>
       <div class="col d-flex justify-content-end align-items-center">
         <span class="mr-1">常用過濾關鍵字：</span>
@@ -24,6 +24,19 @@
             v-model="commonFilter">
           <label class="form-check-label" for="med">醫藥</label>
         </div>
+      </div>
+    </div>
+    <div class="form-row mb-3">
+      <div class="col form-inline">
+        <label for="filterTitle" class="mx-3">單位篩選</label>
+        <select class="form-control" id="filterTitle" v-model="organizationFilter">
+          <option value="">無篩選</option>
+          <option v-for="item in currentLoadRss" :key="item" :value="item">
+            {{ item }}
+          </option>
+        </select>
+      </div>
+      <div class="col d-flex justify-content-end align-items-center pr-3">
         <span :class="{'text-danger': currentLoadRss.length !== rssListNum.length,
             'text-success': currentLoadRss.length === rssListNum.length}">
           載入進度：<strong>{{ currentLoadRss.length }} / {{ rssListNum.length }}</strong>
@@ -34,10 +47,11 @@
         </a>
       </div>
     </div>
+
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">#</th>
+          <th scope="col" width="55">#</th>
           <th scope="col" width="250">單位</th>
           <th scope="col">標題</th>
           <th scope="col" width="170">
@@ -48,20 +62,27 @@
           </th>
         </tr>
       </thead>
-      <tbody v-if="fliterList">
-        <tr v-for="(item, index) in fliterList" :key="item.link"
-          :class="{'table-warning': item.dateError}">
-          <th scope="row" class="align-middle">{{ index + 1 }}</th>
-          <td class="align-middle">{{ item.organization }}</td>
-          <td class="align-middle">
-            <a :href="item.link" class="text-decoration-none" target="_blank">{{ item.title }}</a>
-          </td>
-          <td class="align-middle">
-            {{ item.date }} <br />
-            <small>(原始日期：{{ item.originDate }})</small>
-          </td>
-        </tr>
-      </tbody>
+        <transition-group name="fade" tag="tbody" v-if="fliterList">
+          <tr v-for="(item, index) in fliterList" :key="item.link"
+            :class="{'table-warning': item.dateError}">
+            <th scope="row" class="align-middle">{{ index + 1 }}</th>
+            <td class="align-middle">{{ item.organization }}</td>
+            <td class="align-middle">
+              <a :href="item.link" class="text-decoration-none" target="_blank">
+                {{ item.title }}
+              </a>
+            </td>
+            <td class="align-middle">
+              {{ item.date }} <br />
+              <small>(原始日期：{{ item.originDate }})</small>
+            </td>
+          </tr>
+          <tr v-if="!fliterList.length && rssList.length" key="0">
+            <td colspan="4" class="text-center alert-danger h5" style="line-height: 2.5;">
+              查無搜尋關鍵字之資料
+            </td>
+          </tr>
+        </transition-group>
     </table>
   </div>
 </template>
@@ -95,6 +116,7 @@ export default {
         area: 'all',
       },
       commonFilter: [],
+      organizationFilter: '',
     };
   },
   methods: {
@@ -169,6 +191,10 @@ export default {
         newList = tempList;
       }
 
+      if (this.organizationFilter) {
+        newList = newList.filter(item => item.organization.match(this.organizationFilter));
+      }
+
       if (this.search.text) {
         switch (this.search.area) {
           case 'all': {
@@ -233,5 +259,11 @@ export default {
     transform: rotate(180deg);
     transition-duration: 0.2s;
   }
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
 }
 </style>
