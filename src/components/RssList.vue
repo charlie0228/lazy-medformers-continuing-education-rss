@@ -132,7 +132,7 @@ export default {
         rssData.forEach((item) => {
           if (item.gsx$feedurl.$t) {
             feeder.add({
-              url: process.env.VUE_APP_CORS_PROXY + item.gsx$feedurl.$t,
+              url: `${process.env.VUE_APP_CORS_PROXY}?url=${item.gsx$feedurl.$t}&type=rss`,
               refresh: 10 * 60 * 1000,
             });
             this.yearDisplay[item.gsx$title.$t] = item.gsx$yeardisplay.$t;
