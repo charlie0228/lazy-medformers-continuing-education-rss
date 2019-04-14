@@ -15,14 +15,14 @@
       <div class="col d-flex justify-content-end align-items-center">
         <span class="mr-1">常用過濾關鍵字：</span>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="credit" value="學分"
+          <input class="form-check-input" type="checkbox" id="credit" value="性別"
             v-model="commonFilter">
-          <label class="form-check-label" for="credit">學分</label>
+          <label class="form-check-label" for="credit">性別</label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="med" value="醫藥"
+          <input class="form-check-input" type="checkbox" id="med" value="感控"
             v-model="commonFilter">
-          <label class="form-check-label" for="med">醫藥</label>
+          <label class="form-check-label" for="med">感控</label>
         </div>
       </div>
     </div>
@@ -47,12 +47,14 @@
         </a>
       </div>
     </div>
-
+    <div class="row px-3 mt-4 my-2" v-if="organizationFilter">
+      <div class="col h3">{{ organizationFilter }}</div>
+    </div>
     <table class="table">
       <thead>
         <tr>
           <th scope="col" width="55">#</th>
-          <th scope="col" width="250">單位</th>
+          <th scope="col" width="250" v-if="!organizationFilter">單位</th>
           <th scope="col">標題</th>
           <th scope="col" width="170">
             日期
@@ -66,7 +68,7 @@
           <tr v-for="(item, index) in fliterList" :key="item.link"
             :class="{'table-warning': item.dateError}">
             <th scope="row" class="align-middle">{{ index + 1 }}</th>
-            <td class="align-middle">{{ item.organization }}</td>
+            <td class="align-middle" v-if="!organizationFilter">{{ item.organization }}</td>
             <td class="align-middle">
               <a :href="item.link" class="text-decoration-none" target="_blank">
                 {{ item.title }}
@@ -130,21 +132,21 @@ export default {
 
         // Set RSS feed URL
         rssData.forEach((item) => {
-          if (item.gsx$feedurl.$t) {
+          if (item.gsx$enabled.$t === 'TRUE') {
             feeder.add({
               url: `${process.env.VUE_APP_CORS_PROXY}?url=${item.gsx$feedurl.$t}&type=rss`,
               refresh: 10 * 60 * 1000,
             });
             this.yearDisplay[item.gsx$title.$t] = item.gsx$yeardisplay.$t;
-            this.rssListNum.push(item.gsx$title.$t);
           }
         });
-        this.rssListNum = [...new Set(this.rssListNum)];
+
         this.getRss();
       });
     },
     getRss() {
       const vm = this;
+      const filterYear = 2019;
       vm.isLoading = true;
       // Get RSS feed items
       feeder.on('new-item', (item) => {
@@ -153,17 +155,23 @@ export default {
           title: item.title,
           link: item.link,
           originDate: item.description.split(',')[1].trim(),
-          date: this.dateNormalize(item.description.split(',')[1], this.yearDisplay[item.description.split(',')[0]]),
+          date: this.dateNormalize(item.description.split(',')[0], item.description.split(',')[1].trim(), this.yearDisplay[item.description.split(',')[0]]),
           dateError: false,
         };
+
         if (vm.newRssItem.date === 'Invalid date') {
           vm.newRssItem.dateError = true;
         }
-        vm.rssList.push(vm.newRssItem);
+
+        if (vm.newRssItem.dateError || Number(vm.newRssItem.date.split('-')[0]) >= filterYear) {
+          this.rssListNum.push(item.description.split(',')[0]);
+          this.rssListNum = [...new Set(this.rssListNum)];
+          vm.rssList.push(vm.newRssItem);
+        }
         vm.isLoading = false;
       });
     },
-    dateNormalize(date, type) {
+    dateNormalize(organization, date, type) {
       if (type === 'AD') {
         const newdate = date.split(/[/-]/g).map((item) => {
           if (item.length < 2) {
@@ -237,7 +245,7 @@ export default {
       return this.fliterRssList;
     },
     currentLoadRss() {
-      return [...new Set(this.rssList.map(item => item.organization))];
+      return [...new Set(this.rssList.map(item => item.organization))].sort();
     },
   },
   created() {
