@@ -20,9 +20,9 @@
           <label class="form-check-label" for="credit">性別</label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="med" value="感控"
+          <input class="form-check-input" type="checkbox" id="med" value="感染"
             v-model="commonFilter">
-          <label class="form-check-label" for="med">感控</label>
+          <label class="form-check-label" for="med">感染</label>
         </div>
       </div>
     </div>
@@ -41,8 +41,7 @@
             'text-success': currentLoadRss.length === rssListNum.length}">
           載入進度：<strong>{{ currentLoadRss.length }} / {{ rssListNum.length }}</strong>
         </span>
-        <a href="#" @click.prevent="reload" class="ml-2" title="重新整理"
-          v-if="currentLoadRss.length !== rssListNum.length">
+        <a href="#" @click.prevent="reload" class="ml-2 reload" title="重新整理">
           <i class="fas fa-redo"></i>
         </a>
       </div>
@@ -51,16 +50,33 @@
       <div class="col h3">{{ organizationFilter }}</div>
     </div>
     <table class="table">
-      <thead>
+      <thead class="text-center">
         <tr>
-          <th scope="col" width="55">#</th>
-          <th scope="col" width="250" v-if="!organizationFilter">單位</th>
-          <th scope="col">標題</th>
-          <th scope="col" width="170">
+          <th class="align-middle" rowspan="2" scope="col" width="55">#</th>
+          <th class="align-middle" rowspan="2" scope="col" width="250"
+            v-if="!organizationFilter">單位</th>
+          <th class="align-middle" rowspan="2" scope="col">標題</th>
+          <th colspan="2" scope="col">
             日期
             <a class="ml-1" href="#" @click.prevent="ascending = !ascending">
               <div class="icon" :class="{'inverse': ascending}"></div>
             </a>
+          </th>
+        </tr>
+        <tr>
+          <th scope="col" width="250">
+            <a class="mr-1" href="#" @click.prevent="dateDisplay.publish = !dateDisplay.publish">
+              <i class="far fa-check-square" v-if="dateDisplay.publish"></i>
+              <i class="far fa-square" v-else></i>
+            </a>
+            公告日期
+          </th>
+          <th scope="col" width="250">
+            <a class="mr-1" href="#" @click.prevent="dateDisplay.event = !dateDisplay.event">
+              <i class="far fa-check-square" v-if="dateDisplay.event"></i>
+              <i class="far fa-square" v-else></i>
+            </a>
+            活動日期
           </th>
         </tr>
       </thead>
@@ -75,13 +91,21 @@
               </a>
             </td>
             <td class="align-middle">
-              {{ item.date }} <br />
-              <small>(原始日期：{{ item.originDate }})</small>
+              <div v-if="item.dateMean === 'PUBLISH'">
+                {{ item.date }} <br />
+                <small>(原始日期：{{ item.originDate }})</small>
+              </div>
+            </td>
+            <td class="align-middle">
+              <div v-if="item.dateMean === 'EVENT'">
+                {{ item.date }} <br />
+                <small>(原始日期：{{ item.originDate }})</small>
+              </div>
             </td>
           </tr>
           <tr v-if="!fliterList.length && rssList.length" key="0">
-            <td colspan="4" class="text-center alert-danger h5" style="line-height: 2.5;">
-              查無搜尋關鍵字之資料
+            <td colspan="5" class="text-center alert-info h5" style="line-height: 2.5;">
+              查無資料
             </td>
           </tr>
         </transition-group>
@@ -102,15 +126,22 @@ export default {
       rssList: [],
       fliterRssList: [],
       rssListNum: [],
+      filterYear: 2019,
       ascending: true,
+      dateDisplay: {
+        publish: true,
+        event: true,
+      },
       isLoading: false,
       yearDisplay: {},
+      dateMean: {},
       newRssItem: {
         organization: '',
         title: '',
         link: '',
         date: '',
         originDate: '',
+        dateMean: '',
         dateError: false,
       },
       search: {
@@ -138,6 +169,7 @@ export default {
               refresh: 10 * 60 * 1000,
             });
             this.yearDisplay[item.gsx$title.$t] = item.gsx$yeardisplay.$t;
+            this.dateMean[item.gsx$title.$t] = item.gsx$datemean.$t;
           }
         });
 
@@ -146,7 +178,6 @@ export default {
     },
     getRss() {
       const vm = this;
-      const filterYear = 2019;
       vm.isLoading = true;
       // Get RSS feed items
       feeder.on('new-item', (item) => {
@@ -154,8 +185,9 @@ export default {
           organization: item.description.split(',')[0],
           title: item.title,
           link: item.link,
-          originDate: item.description.split(',')[1].trim(),
+          originDate: item.description.split(',')[1].split('&nbsp; <A')[0].trim(),
           date: this.dateNormalize(item.description.split(',')[0], item.description.split(',')[1].trim(), this.yearDisplay[item.description.split(',')[0]]),
+          dateMean: this.dateMean[item.description.split(',')[0]],
           dateError: false,
         };
 
@@ -163,7 +195,7 @@ export default {
           vm.newRssItem.dateError = true;
         }
 
-        if (vm.newRssItem.dateError || Number(vm.newRssItem.date.split('-')[0]) >= filterYear) {
+        if (vm.newRssItem.dateError || Number(vm.newRssItem.date.split('-')[0]) >= vm.filterYear) {
           this.rssListNum.push(item.description.split(',')[0]);
           this.rssListNum = [...new Set(this.rssListNum)];
           vm.rssList.push(vm.newRssItem);
@@ -172,8 +204,9 @@ export default {
       });
     },
     dateNormalize(organization, date, type) {
+      let newdate = date.split(' ')[0];
       if (type === 'AD') {
-        const newdate = date.split(/[/-]/g).map((item) => {
+        newdate = newdate.split(/[/-]/g).map((item) => {
           if (item.length < 2) {
             return `0${item}`;
           }
@@ -181,7 +214,7 @@ export default {
         });
         return moment(newdate.join('-')).format('YYYY-MM-DD');
       } if (type === 'ROC') {
-        const newdate = date.split(/[/.-]/g);
+        newdate = newdate.split(/[/.-]/g);
         newdate[0] = Number(newdate[0]) + 1911;
         return moment(newdate.join('-')).format('YYYY-MM-DD');
       }
@@ -190,7 +223,10 @@ export default {
     filter() {
       let newList = this.rssList;
       const vm = this;
-
+      if (vm.dateDisplay.publish === false && vm.dateDisplay.event === false) {
+        vm.fliterRssList = [];
+        return;
+      }
       if (this.commonFilter.length) {
         let tempList = [];
         this.commonFilter.forEach((item) => {
@@ -225,6 +261,7 @@ export default {
         }
       }
       vm.fliterRssList = [...new Set(newList)];
+      vm.fliterRssList = vm.fliterRssList.filter(item => ((item.dateMean === 'PUBLISH') === vm.dateDisplay.publish) || ((item.dateMean === 'EVENT') === vm.dateDisplay.event));
     },
     sort() {
       const invalidDate = this.fliterRssList.filter(item => item.date === 'Invalid date');
@@ -266,6 +303,13 @@ export default {
   &.inverse {
     transform: rotate(180deg);
     transition-duration: 0.2s;
+  }
+}
+.reload {
+  transition-duration: 0.2s;
+  &:hover {
+  transform: rotate(135deg);
+  transition-duration: 0.2s;
   }
 }
 .fade-enter-active, .fade-leave-active {

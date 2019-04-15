@@ -8,7 +8,7 @@
           <h3 class="nav-item nav-link active" href="#">課程網站資料彙整</h3>
         </div>
     </nav>
-    <div class="container">
+    <div class="container-fluid">
       <rssList :key="keys" @reload="currentTime" />
     </div>
   </div>
@@ -40,6 +40,9 @@ export default {
 @import url('https://fonts.googleapis.com/css?family=Noto+Sans+TC');
 * {
   font-family: 'Noto Sans TC', sans-serif;
+}
+body {
+  overflow-y: scroll;
 }
 .logo {
   width: 125px;
