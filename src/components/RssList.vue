@@ -65,18 +65,20 @@
         </tr>
         <tr>
           <th scope="col" width="250">
-            <a class="mr-1" href="#" @click.prevent="dateDisplay.publish = !dateDisplay.publish">
+            <a class="mr-1  text-reset text-decoration-none" href="#"
+              @click.prevent="dateDisplay.publish = !dateDisplay.publish">
               <i class="far fa-check-square" v-if="dateDisplay.publish"></i>
               <i class="far fa-square" v-else></i>
-            </a>
             公告日期
+            </a>
           </th>
           <th scope="col" width="250">
-            <a class="mr-1" href="#" @click.prevent="dateDisplay.event = !dateDisplay.event">
+            <a class="mr-1 text-reset text-decoration-none" href="#"
+              @click.prevent="dateDisplay.event = !dateDisplay.event">
               <i class="far fa-check-square" v-if="dateDisplay.event"></i>
               <i class="far fa-square" v-else></i>
-            </a>
             活動日期
+            </a>
           </th>
         </tr>
       </thead>
