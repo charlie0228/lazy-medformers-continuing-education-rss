@@ -117,9 +117,11 @@
 
 <script>
 import moment from 'moment';
-import RssFeedEmitter from 'rss-feed-emitter';
+import Parser from 'rss-parser';
+// import RssFeedEmitter from 'rss-feed-emitter';
 
-const feeder = new RssFeedEmitter();
+// const feeder = new RssFeedEmitter();
+const parser = new Parser();
 moment.suppressDeprecationWarnings = true;
 
 export default {
@@ -160,58 +162,40 @@ export default {
       const api = process.env.VUE_APP_RSS_LIST;
       const vm = this;
       vm.isLoading = true;
-
       this.$http.get(api).then((res) => {
         const rssData = res.data.feed.entry;
+        rssData.forEach((entry, index) => {
+          if (entry.gsx$enabled.$t === 'TRUE') {
+            parser.parseURL(`${process.env.VUE_APP_CORS_PROXY}?url=${entry.gsx$feedurl.$t}&type=rss`, (err, feed) => {
+              vm.yearDisplay[entry.gsx$title.$t] = entry.gsx$yeardisplay.$t;
+              vm.dateMean[entry.gsx$title.$t] = entry.gsx$datemean.$t;
 
-        // Set RSS feed URL
-        rssData.forEach((item) => {
-          if (item.gsx$enabled.$t === 'TRUE') {
-            vm.rssLink.push(`${process.env.VUE_APP_CORS_PROXY}?url=${item.gsx$feedurl.$t}&type=rss`);
-            feeder.add({
-              url: `${process.env.VUE_APP_CORS_PROXY}?url=${item.gsx$feedurl.$t}&type=rss`,
-              refresh: 10 * 60 * 1000,
+              feed.items.forEach((item) => {
+                vm.newRssItem = {
+                  organization: item.contentSnippet.split(',')[0],
+                  title: item.title,
+                  link: item.link,
+                  originDate: item.contentSnippet.split(',')[1].split('&nbsp; <A')[0].replace(/(<BR>)*(&nbsp;)*/ig, '').trim(), // 科技大觀園
+                  date: vm.dateNormalize(item.contentSnippet.split(',')[0], item.contentSnippet.split(',')[1].trim(), vm.yearDisplay[item.contentSnippet.split(',')[0]]),
+                  dateMean: vm.dateMean[item.contentSnippet.split(',')[0]],
+                  dateError: false,
+                };
+
+                if (vm.newRssItem.date === 'Invalid date') {
+                  vm.newRssItem.dateError = true;
+                }
+
+                if (vm.newRssItem.dateError || Number(vm.newRssItem.date.split('-')[0]) >= vm.filterYear) {
+                  vm.rssListNum.push(item.contentSnippet.split(',')[0]);
+                  vm.rssListNum = [...new Set(vm.rssListNum)];
+                  vm.rssList.push(vm.newRssItem);
+                }
+              });
+              if (index === rssData.length - 1) {
+                vm.isLoading = false;
+              }
             });
-            vm.yearDisplay[item.gsx$title.$t] = item.gsx$yeardisplay.$t;
-            vm.dateMean[item.gsx$title.$t] = item.gsx$datemean.$t;
           }
-        });
-        this.checkRssLink(vm.rssLink);
-        this.getRss();
-      });
-    },
-    getRss() {
-      const vm = this;
-      vm.isLoading = true;
-      // Get RSS feed items
-      feeder.on('new-item', (item) => {
-        vm.newRssItem = {
-          organization: item.description.split(',')[0],
-          title: item.title,
-          link: item.link,
-          originDate: item.description.split(',')[1].split('&nbsp; <A')[0].replace(/(<BR>)*(&nbsp;)*/ig, '').trim(), // 科技大觀園
-          date: vm.dateNormalize(item.description.split(',')[0], item.description.split(',')[1].trim(), vm.yearDisplay[item.description.split(',')[0]]),
-          dateMean: vm.dateMean[item.description.split(',')[0]],
-          dateError: false,
-        };
-
-        if (vm.newRssItem.date === 'Invalid date') {
-          vm.newRssItem.dateError = true;
-        }
-
-        if (vm.newRssItem.dateError || Number(vm.newRssItem.date.split('-')[0]) >= vm.filterYear) {
-          vm.rssListNum.push(item.description.split(',')[0]);
-          vm.rssListNum = [...new Set(vm.rssListNum)];
-          vm.rssList.push(vm.newRssItem);
-        }
-        vm.isLoading = false;
-      });
-    },
-    checkRssLink(linkList) {
-      const vm = this;
-      linkList.forEach((item) => {
-        vm.$http.get(item).then((res) => {
-          console.log(res);
         });
       });
     },

@@ -14,7 +14,7 @@
     "jquery": "^3.3.1",
     "moment": "^2.24.0",
     "popper.js": "^1.15.0",
-    "rss-feed-emitter": "^2.0.1",
+    "rss-parser": "^3.7.0",
     "vue": "^2.6.6",
     "vue-axios": "^2.1.4",
     "vue-loading-overlay": "^3.2.0",
@@ -23,7 +23,7 @@
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.5.0",
     "@vue/cli-plugin-eslint": "^3.5.0",
-    "@vue/cli-service": "^3.5.0",
+    "@vue/cli-service": "^3.6.0",
     "@vue/eslint-config-airbnb": "^4.0.0",
     "babel-eslint": "^10.0.1",
     "eslint": "^5.8.0",
