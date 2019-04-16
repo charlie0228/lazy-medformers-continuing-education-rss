@@ -126,6 +126,7 @@ export default {
   data() {
     return {
       rssList: [],
+      rssLink: [],
       fliterRssList: [],
       rssListNum: [],
       filterYear: 2019,
@@ -166,15 +167,16 @@ export default {
         // Set RSS feed URL
         rssData.forEach((item) => {
           if (item.gsx$enabled.$t === 'TRUE') {
+            vm.rssLink.push(`${process.env.VUE_APP_CORS_PROXY}?url=${item.gsx$feedurl.$t}&type=rss`);
             feeder.add({
               url: `${process.env.VUE_APP_CORS_PROXY}?url=${item.gsx$feedurl.$t}&type=rss`,
               refresh: 10 * 60 * 1000,
             });
-            this.yearDisplay[item.gsx$title.$t] = item.gsx$yeardisplay.$t;
-            this.dateMean[item.gsx$title.$t] = item.gsx$datemean.$t;
+            vm.yearDisplay[item.gsx$title.$t] = item.gsx$yeardisplay.$t;
+            vm.dateMean[item.gsx$title.$t] = item.gsx$datemean.$t;
           }
         });
-
+        this.checkRssLink(vm.rssLink);
         this.getRss();
       });
     },
@@ -187,9 +189,9 @@ export default {
           organization: item.description.split(',')[0],
           title: item.title,
           link: item.link,
-          originDate: item.description.split(',')[1].split('&nbsp; <A')[0].trim(),
-          date: this.dateNormalize(item.description.split(',')[0], item.description.split(',')[1].trim(), this.yearDisplay[item.description.split(',')[0]]),
-          dateMean: this.dateMean[item.description.split(',')[0]],
+          originDate: item.description.split(',')[1].split('&nbsp; <A')[0].replace(/(<BR>)*(&nbsp;)*/ig, '').trim(), // 科技大觀園
+          date: vm.dateNormalize(item.description.split(',')[0], item.description.split(',')[1].trim(), vm.yearDisplay[item.description.split(',')[0]]),
+          dateMean: vm.dateMean[item.description.split(',')[0]],
           dateError: false,
         };
 
@@ -198,11 +200,19 @@ export default {
         }
 
         if (vm.newRssItem.dateError || Number(vm.newRssItem.date.split('-')[0]) >= vm.filterYear) {
-          this.rssListNum.push(item.description.split(',')[0]);
-          this.rssListNum = [...new Set(this.rssListNum)];
+          vm.rssListNum.push(item.description.split(',')[0]);
+          vm.rssListNum = [...new Set(vm.rssListNum)];
           vm.rssList.push(vm.newRssItem);
         }
         vm.isLoading = false;
+      });
+    },
+    checkRssLink(linkList) {
+      const vm = this;
+      linkList.forEach((item) => {
+        vm.$http.get(item).then((res) => {
+          console.log(res);
+        });
       });
     },
     dateNormalize(organization, date, type) {
