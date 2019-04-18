@@ -37,6 +37,9 @@
         </select>
       </div>
       <div class="col d-flex justify-content-end align-items-center pr-3">
+        <download-excel class="btn btn-success mx-3" :data="exportXLS()" name="活動列表.xls">
+          Download Data
+        </download-excel>
         <span :class="{'text-danger': currentLoadRss.length !== rssListNum.length,
             'text-success': currentLoadRss.length === rssListNum.length}">
           載入進度：<strong>{{ currentLoadRss.length }} / {{ rssListNum.length }}</strong>
@@ -269,6 +272,20 @@ export default {
     },
     reload() {
       this.$emit('reload');
+    },
+    exportXLS() {
+      const exportXLS = [];
+      this.fliterRssList.forEach((item) => {
+        exportXLS.push({
+          organization: item.organization,
+          title: item.title,
+          link: item.link,
+          originDate: item.originDate,
+          publish: item.dateMean === 'PUBLISH' ? item.date : '',
+          event: item.dateMean === 'EVENT' ? item.date : '',
+        });
+      });
+      return exportXLS;
     },
   },
   computed: {
