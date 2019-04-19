@@ -37,8 +37,8 @@
         </select>
       </div>
       <div class="col d-flex justify-content-end align-items-center pr-3">
-        <a class="btn btn-danger" href="https://lazy-medformers-rss-to-google.herokuapp.com/"
-          role="button" target="_blank">匯出至Google Sheets</a>
+        <!-- <a class="btn btn-danger" href="https://lazy-medformers-rss-to-google.herokuapp.com/"
+          role="button" target="_blank">匯出至Google Sheets</a> -->
         <download-excel class="btn btn-info mx-3" :data="exportXLS()"
           name="活動列表.xls" style="cursor: pointer;">
           匯出EXCEL檔案
